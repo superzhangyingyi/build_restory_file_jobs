@@ -1,2 +1,3 @@
-# build_restory_file_jobs
-批量创建某一备份作业的所有文件备份集的恢复任务，不立即执行
+# bug版本 ~**已废除**~
+  - 根据jobUUID查找，当作业任务删除后就找不到了
+  - 通过控制台确定，软件是通过resource_uuid + minor_resource_id来确定的
