@@ -6,11 +6,9 @@ Created on Mon Aug 14 09:53:29 2023
 """
 
 import json
-from login import DbackupLogin
+import requests
 
-# 用户登录 DbackupLogin(用户名, 密码)
-user = DbackupLogin('python', '22222222')
-[SESSION, COOKIE, TOKEN] = user.dbackupd_login()
+API_KEY='72c413237e5aa1eecbaf2860b51b023e'
 resourceUUID = 'b9b25bb0382311ee800000505692225b'
 minorResourceID = 'ca65ba1f8f400001d99916a013b02fb0'
 
@@ -20,10 +18,9 @@ def restory_collection(resource_uuid, minor_resource_id):
     payload = {
         'resource_uuid': resource_uuid,
         'minor_resource_id': minor_resource_id,
-        "X-CSRF-Token":TOKEN,
         "module": "file"
     }
-    testStr = SESSION.get(url3, params=payload, cookies=COOKIE)
+    testStr = requests.get(url3, params=payload, headers={"X-API-Key":API_KEY})
     restoryList = json.loads(testStr.text)['rows']
     print('共'+str(len(restoryList))+'个备份集')
     return restoryList
@@ -85,5 +82,5 @@ for i in range(len(restoryList)):
         "precondition": "",
         "name": "auto_create测试作业"+str(i)+"_" +  item['backup_start_time'].split(' ')[0]
     }
-    r = SESSION.post('http://192.168.3.118/d2/r/v2/jobs', json=data3, cookies=COOKIE, headers={"X-CSRF-Token":TOKEN})
+    r = requests.post('http://192.168.3.118/d2/r/v2/jobs', json=data3, headers={"X-API-Key":API_KEY})
     print(r.text)
