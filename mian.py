@@ -9,11 +9,14 @@ import json
 import requests
 
 API_KEY='72c413237e5aa1eecbaf2860b51b023e'
-resourceUUID = 'b9b25bb0382311ee800000505692225b'
 minorResourceID = 'ca65ba1f8f400001d99916a013b02fb0'
+START_TIME = '2024-08-31 15:11:00'
 
 # 找到某作业下的所有备份集
-def restory_collection(resource_uuid, minor_resource_id):
+def find_restory_collection(minor_resource_id):
+    payload = {'minor_resource_id': minorResourceID}
+    r = requests.get('http://192.168.3.118/d2/r/resources/minor', params=payload, headers={"X-API-Key":API_KEY})
+    resource_uuid = json.loads(r.text)['rows'][0]['resource_uuid']
     url3 = "http://192.168.3.118/d2/r/v2/sets/restore/sets"
     payload = {
         'resource_uuid': resource_uuid,
@@ -25,62 +28,64 @@ def restory_collection(resource_uuid, minor_resource_id):
     print('共'+str(len(restoryList))+'个备份集')
     return restoryList
 
-
-#正式操作
+#每一个备份集都创建恢复作业
 # =============================================================================
 # entries: 要恢复的备份内容
 #     全路径用{“dir”:"dirPath"} 单文件用{"file":"path/fileName.txt"}
 #     对于没有的路径或文件会 不执行该文件的恢复，其余文件正常恢复不报错
 # location: 恢复路径
 # =============================================================================
-restoryList = restory_collection(resourceUUID, minorResourceID)
-#每一个备份集都创建恢复作业
-for i in range(len(restoryList)):
-    item = restoryList[i]
-    data3 = {
-        "type": "restore",
-        "host_id": item['host_uuid'],
-        "agent": item['agent'],
-        "source": {
-            "id": item['resource_uuid'],
-            "name": "file",
-            "pool_uuid": item['pool_uuid'],
-            "backup_host_id": item['host_uuid'],
-            "backup_minor_resource_id": item['minor_resource_id'],
-            "seq": item['seq'],
-            "entries": [
-                {"file": "/backupTest/config.txt"},
-                {"file": "/backupTest/4.29/boring.txt"},
-                {"file": "/backupTest/4.29/nothing.txt"},
-                {"dir": "/backupTest/all"},
-                {"dir": "/nosuchDir/all"},
-                {"file": "/nosuchDir/all/no.txt"}
-            ],
-            "time":item['backup_start_time'],
-            "catalog_id": restoryList[1]['uuid']
-        },
-        "target": {
-            "id": item['resource_uuid'],
-            "name": 'file',
-            "location": ""
-        },
-        "schedule": {
-            "start": "2024-08-31 15:11:00",
-            "type": "once"
-        },
-        "options": {
-            "channels": 1,
-            "location": "/restory/" + item['backup_start_time'].split(' ')[0],
-            "existing": "overwrite",
-            "path_converter": "",
-            "numeric_owner": False
-        },
-        "subtype": "point_in_time",
-        "max_seconds_retry": 600,
-        "resumption_buffer_size": 10485760,
-        "max_rate_limits": [],
-        "precondition": "",
-        "name": "auto_create测试作业"+str(i)+"_" +  item['backup_start_time'].split(' ')[0]
-    }
-    r = requests.post('http://192.168.3.118/d2/r/v2/jobs', json=data3, headers={"X-API-Key":API_KEY})
-    print(r.text)
+def build_restory_jobs(restoryListParams):
+    for i in range(len(restoryList)):
+        item = restoryList[i]
+        data3 = {
+            "type": "restore",
+            "host_id": item['host_uuid'],
+            "agent": item['agent'],
+            "source": {
+                "id": item['resource_uuid'],
+                "name": "file",
+                "pool_uuid": item['pool_uuid'],
+                "backup_host_id": item['host_uuid'],
+                "backup_minor_resource_id": item['minor_resource_id'],
+                "seq": item['seq'],
+                "entries": [
+                    {"file": "/backupTest/config.txt"},
+                    {"file": "/backupTest/4.29/boring.txt"},
+                    {"file": "/backupTest/4.29/nothing.txt"},
+                    {"dir": "/backupTest/all"},
+                    {"dir": "/nosuchDir/all"},
+                    {"file": "/nosuchDir/all/no.txt"}
+                ],
+                "time":item['backup_start_time'],
+                "catalog_id": restoryList[1]['uuid']
+            },
+            "target": {
+                "id": item['resource_uuid'],
+                "name": 'file',
+                "location": ""
+            },
+            "schedule": {
+                "start": START_TIME,
+                "type": "once"
+            },
+            "options": {
+                "channels": 1,
+                "location": "/restory/" + item['backup_start_time'].split(' ')[0],
+                "existing": "overwrite",
+                "path_converter": "",
+                "numeric_owner": False
+            },
+            "subtype": "point_in_time",
+            "max_seconds_retry": 600,
+            "resumption_buffer_size": 10485760,
+            "max_rate_limits": [],
+            "precondition": "",
+            "name": "auto_create测试作业"+str(i)+"_" +  item['backup_start_time'].split(' ')[0]
+        }
+        r = requests.post('http://192.168.3.118/d2/r/v2/jobs', json=data3, headers={"X-API-Key":API_KEY})
+        print(r.text)
+
+if __name__ == '__main__':
+    restoryList = find_restory_collection(minorResourceID)
+    build_restory_jobs(restoryList)
