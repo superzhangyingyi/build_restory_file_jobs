@@ -1,4 +1,4 @@
-# 分支main：
+# 分支Master：
 1. v1.1 和web一样，靠resource_uuid和minor_resource_id来查找所有备份集
 3. v1.2(稳定版) 将用户账号密码登录改为apikey登录，不再需要login.py登录
 
